@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>کوییز نایت</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Vazirmatn:wght@400;500;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --ink:#120E1B;
+    --panel:#1E1830;
+    --panel-2:#241C3A;
+    --blaze:#FF4B3E;
+    --volt:#FFC93C;
+    --go:#3ED598;
+    --chalk:#F4EFE6;
+    --chalk-dim:#B8AFC9;
+    --line:#3A3054;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 8px 8px, rgba(255,255,255,0.05) 1.4px, transparent 1.6px) 0 0/22px 22px,
+      var(--ink);
+    color:var(--chalk);
+    font-family:'Vazirmatn', sans-serif;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .app{
+    width:100%;
+    max-width:560px;
+  }
+  .hidden{display:none !important;}
+  .logo{
+    text-align:center;
+    margin-bottom:22px;
+  }
+  .logo .eyebrow{
+    font-family:'Space Mono', monospace;
+    font-size:12px;
+    letter-spacing:3px;
+    color:var(--volt);
+    display:block;
+    margin-bottom:6px;
+  }
+  .logo h1{
+    font-family:'Bangers', cursive;
+    font-size:44px;
+    letter-spacing:2px;
+    margin:0;
+    color:var(--blaze);
+    text-shadow: 3px 3px 0 var(--ink), -2px -2px 0 var(--volt);
+    transform:rotate(-1.5deg);
+    line-height:1;
+  }
+  .panel{
+    background:var(--panel);
+    border:3px solid var(--line);
+    border-radius:18px;
+    padding:26px;
+    position:relative;
+    box-shadow: 6px 6px 0 rgba(0,0,0,0.35);
+  }
+  .panel::before{
+    content:"";
+    position:absolute;
+    top:-3px; right:-3px; bottom:-3px; left:-3px;
+    border-radius:18px;
+    pointer-events:none;
+    border:1px solid rgba(255,255,255,0.04);
+  }
+  h2{
+    font-weight:800;
+    font-size:20px;
+    margin:0 0 18px 0;
+  }
+  label{
+    display:block;
+    font-size:13px;
+    color:var(--chalk-dim);
+    margin-bottom:6px;
+    font-weight:500;
+  }
+  input[type=text], select{
+    width:100%;
+    background:var(--ink);
+    border:2px solid var(--line);
+    color:var(--chalk);
+    border-radius:10px;
+    padding:12px 14px;
+    font-family:'Vazirmatn', sans-serif;
+    font-size:15px;
+    margin-bottom:16px;
+  }
+  input[type=text]:focus, select:focus{
+    outline:none;
+    border-color:var(--volt);
+  }
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    width:100%;
+    border:none;
+    border-radius:12px;
+    padding:14px 18px;
+    font-family:'Vazirmatn', sans-serif;
+    font-weight:700;
+    font-size:15px;
+    cursor:pointer;
+    transition:transform .08s ease;
+  }
+  .btn:active{transform:scale(0.97);}
+  .btn-primary{ background:var(--blaze); color:#fff; }
+  .btn-secondary{ background:var(--panel-2); color:var(--chalk); border:2px solid var(--line); }
+  .btn-gold{ background:var(--volt); color:#25190A; }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .row{ display:flex; gap:10px; }
+  .row .btn{ flex:1; }
+  .choice-row{ margin-top:10px; }
+  .btn-choice{
+    display:block;
+    width:100%;
+    text-align:right;
+    background:var(--panel-2);
+    border:2px solid var(--line);
+    color:var(--chalk);
+    border-radius:12px;
+    padding:14px 16px;
+    font-family:'Vazirmatn', sans-serif;
+    font-size:15px;
+    margin-bottom:10px;
+    cursor:pointer;
+  }
+  .btn-choice:hover{ border-color:var(--volt); }
+  .btn-choice.selected{ border-color:var(--volt); background:#2c2246; }
+  .btn-choice.correct{ border-color:var(--go); background:#12362a; }
+  .btn-choice.incorrect{ border-color:var(--blaze); background:#3a1a1a; }
+  .btn-choice:disabled{ cursor:default; }
+  .code-display{
+    font-family:'Space Mono', monospace;
+    font-size:40px;
+    letter-spacing:10px;
+    text-align:center;
+    color:var(--volt);
+    background:var(--ink);
+    border:2px dashed var(--line);
+    border-radius:14px;
+    padding:16px 10px;
+    margin-bottom:16px;
+  }
+  .muted{ color:var(--chalk-dim); font-size:13px; text-align:center; margin-top:4px;}
+  .player-list{ list-style:none; padding:0; margin:14px 0; display:flex; flex-wrap:wrap; gap:8px; }
+  .player-chip{
+    background:var(--panel-2);
+    border:2px solid var(--line);
+    border-radius:999px;
+    padding:6px 14px;
+    font-size:13px;
+    font-weight:600;
+  }
+  .top-bar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .badge{
+    font-family:'Space Mono', monospace;
+    font-size:12px;
+    padding:5px 10px;
+    border-radius:8px;
+    font-weight:700;
+    letter-spacing:1px;
+  }
+  .badge-easy{ background:rgba(62,213,152,.15); color:var(--go); }
+  .badge-medium{ background:rgba(255,201,60,.15); color:var(--volt); }
+  .badge-hard{ background:rgba(255,75,62,.15); color:var(--blaze); }
+  .timer-wrap{ position:relative; width:64px; height:64px; }
+  .timer-burst{
+    width:100%; height:100%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Space Mono', monospace;
+    font-weight:700;
+    font-size:20px;
+    background:var(--panel-2);
+    border:3px solid var(--volt);
+    border-radius:50%;
+  }
+  .timer-burst.low{ border-color:var(--blaze); color:var(--blaze); animation:pulse 0.6s infinite; }
+  @keyframes pulse{ 0%,100%{transform:scale(1);} 50%{transform:scale(1.08);} }
+  .qtext{ font-size:19px; font-weight:700; line-height:1.7; margin-bottom:18px; }
+  .progress-dots{ display:flex; gap:4px; margin-bottom:16px; flex-wrap:wrap; }
+  .dot{ width:8px; height:8px; border-radius:50%; background:var(--line); }
+  .dot.done{ background:var(--volt); }
+  .dot.current{ background:var(--blaze); }
+  .center-msg{ text-align:center; padding:30px 10px; }
+  .center-msg .big{ font-family:'Bangers', cursive; font-size:30px; color:var(--volt); letter-spacing:1px; }
+  .link-btn{ background:none; border:none; color:var(--chalk-dim); text-decoration:underline; font-size:13px; cursor:pointer; padding:0; margin-top:10px; display:block; width:100%; text-align:center; font-family:'Vazirmatn', sans-serif; }
+  table.results{ width:100%; border-collapse:collapse; margin-top:12px; }
+  table.results th, table.results td{ padding:10px 8px; text-align:center; border-bottom:1px solid var(--line); font-size:13px; }
+  table.results th{ color:var(--chalk-dim); font-weight:600; font-size:12px; }
+  table.results td.name{ text-align:right; font-weight:700; }
+  .rank1{ color:var(--volt); }
+  .error-text{ color:var(--blaze); font-size:13px; margin:-8px 0 14px; }
+  .stat-row{ display:flex; gap:10px; margin:16px 0; }
+  .stat-box{ flex:1; background:var(--ink); border:2px solid var(--line); border-radius:12px; padding:14px 6px; text-align:center; }
+  .stat-box .num{ font-family:'Space Mono', monospace; font-size:24px; font-weight:700; }
+  .stat-box .lbl{ font-size:11px; color:var(--chalk-dim); margin-top:2px; }
+  .go-color{ color:var(--go); }
+  .blaze-color{ color:var(--blaze); }
+  .dim-color{ color:var(--chalk-dim); }
+  .version-tag{
+    position:fixed;
+    bottom:8px;
+    right:8px;
+    font-family:'Space Mono', monospace;
+    font-size:10px;
+    color:var(--chalk-dim);
+    opacity:0.55;
+    letter-spacing:0.5px;
+    z-index:999;
+    pointer-events:none;
+    direction:ltr;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="logo">
+    <span class="eyebrow">QUIZ NIGHT</span>
+    <h1>MARVEL QUIZ</h1>
+  </div>
+  <div id="root" class="panel">در حال بارگذاری...</div>
+</div>
+<div class="version-tag" id="versionTag"></div>
+
+<script>
+(function(){
+
+// ---------------------------------------------------------------
+// APP VERSION — bump this with every update:
+//   MAJOR (x.0.0): breaking/structural changes (e.g. backend rewrite)
+//   MINOR (x.y.0): new features
+//   PATCH (x.y.z): small fixes / tweaks
+// ---------------------------------------------------------------
+const APP_VERSION = "2.1.0";
+
+// ---------------------------------------------------------------
+// SUPABASE CONFIG — fill these in with your own project's values
+// (Supabase Dashboard → Project Settings → API)
+// ---------------------------------------------------------------
+const SUPABASE_URL = "https://pilqkyxxdrupgyauftzt.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_ZgFRQn3RrejF-n7pt-mCaQ_fg49phdd";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ---------------------------------------------------------------
+// TOPIC DATA — add more topics later by adding new keys here
+// ---------------------------------------------------------------
+const TOPICS = {
+  marvel: {
+    name: "دنیای مارول",
+    questions: [
+      // --- EASY (10) ---
+      {level:"easy", q:"نام ابرقهرمانی تونی استارک چیست؟", options:["آیرون‌من","کاپیتان آمریکا","ثور","هالک"], correct:0},
+      {level:"easy", q:"سپر کاپیتان آمریکا از چه فلزی ساخته شده؟", options:["وایبرانیوم","آدامانتیوم","تیتانیوم","فولاد"], correct:0},
+      {level:"easy", q:"نام چکش ثور چیست؟", options:["میولنیر","استورم‌بریکر","اسکالیبور","گانتلت"], correct:0},
+      {level:"easy", q:"پیتر پارکر با چه نام ابرقهرمانی شناخته می‌شود؟", options:["مرد عنکبوتی","دیردویل","نایت‌کرالر","فلش"], correct:0},
+      {level:"easy", q:"ناتاشا رومانوف با چه نامی شناخته می‌شود؟", options:["بیوه سیاه","شاهین","گامورا","والکری"], correct:0},
+      {level:"easy", q:"رنگ هالک چیست؟", options:["سبز","آبی","قرمز","بنفش"], correct:0},
+      {level:"easy", q:"بروس بنر به چه هیولایی تبدیل می‌شود؟", options:["هالک","ابومینیشن","رد هالک","جاگرنات"], correct:0},
+      {level:"easy", q:"شرکت تونی استارک چه نام دارد؟", options:["استارک ایندستریز","وین اینترپرایز","اوسکورپ","هامرتک"], correct:0},
+      {level:"easy", q:"کشور خیالی وطن پلنگ سیاه کجاست؟", options:["واکاندا","ژنوشا","لاتوریا","سوکوویا"], correct:0},
+      {level:"easy", q:"سلاح اصلی کاپیتان آمریکا چیست؟", options:["سپر","شمشیر","تفنگ","تبر"], correct:0},
+      // --- MEDIUM (10) ---
+      {level:"medium", q:"کارگردانان فیلم Avengers: Endgame چه کسانی هستند؟", options:["برادران روسو","جیمز گان","جان فاورو","تایکا وایتیتی"], correct:0},
+      {level:"medium", q:"گروت و راکت به کدام گروه تعلق دارند؟", options:["نگهبانان کهکشان","انتقام‌جویان","ایکس‌من","دفاع‌کنندگان"], correct:0},
+      {level:"medium", q:"اسکات لنگ با چه نام ابرقهرمانی شناخته می‌شود؟", options:["مرد مورچه‌ای","وسپ","فالکون","پرنده‌باز"], correct:0},
+      {level:"medium", q:"سنگ فضا در ابتدا داخل کدام شیء قرار داشت؟", options:["تسراکت","چشم آگاموتو","گانتلت بی‌نهایت","عصای لوکی"], correct:0},
+      {level:"medium", q:"نقش تونی استارک/آیرون‌من در فیلم‌های سینمایی مارول را چه بازیگری بازی می‌کند؟", options:["رابرت داونی جونیور","کریس ایوانز","کریس همسورث","مارک روفالو"], correct:0},
+      {level:"medium", q:"سلاح جدید ثور که در نیدآویر ساخته می‌شود چه نام دارد؟", options:["استورم‌بریکر","میولنیر","نیزه گانگنیر","تیشه اودین"], correct:0},
+      {level:"medium", q:"ویژن در فیلم‌های مارول توسط چه کسی/چیزی ساخته می‌شود؟", options:["اولترون","هایدرا","تانوس","آرنیم زولا"], correct:0},
+      {level:"medium", q:"پدر تی‌چالا (پلنگ سیاه) چه نام دارد؟", options:["تی‌چاکا","کیلمانگر","ام‌باکو","زوری"], correct:0},
+      {level:"medium", q:"لوکی خدای چه چیزی نامیده می‌شود؟", options:["نیرنگ و فریب","جنگ","رعد","مرگ"], correct:0},
+      {level:"medium", q:"نام سفینه‌ی اصلی استار-لرد و نگهبانان کهکشان چیست؟", options:["میلانو","بنه‌تار","ملکه سیاه","دستان اژدها"], correct:0},
+      // --- HARD (10) ---
+      {level:"hard", q:"نام واقعی بارون زیمو در فیلم کاپیتان آمریکا: جنگ داخلی چیست؟", options:["هلموت زیمو","ولفگانگ فون اشتراوکر","آرنیم زولا","کروسبونز"], correct:0},
+      {level:"hard", q:"مندارین واقعی که در فیلم Shang-Chi معرفی می‌شود چه نام دارد؟", options:["شو ون‌وو","شو شنگ","ون رونگ","کیو"], correct:0},
+      {level:"hard", q:"سنگ ذهن در فیلم‌های مارول در پیشانی کدام شخصیت جاسازی شده بود؟", options:["ویژن","اسکارلت ویچ","لوکی","اولترون"], correct:0},
+      {level:"hard", q:"نقش تانوس در فیلم‌های مارول را چه بازیگری بازی می‌کند؟", options:["جاش برولین","دیو باتیستا","وینگ راینز","بندیکت کامبربچ"], correct:0},
+      {level:"hard", q:"باکی بارنز پس از شست‌وشوی مغزی توسط شوروی چه نام رمزی می‌گیرد؟", options:["سرباز زمستانی","یو.اس. ایجنت","تسک‌ماستر","کروسبونز"], correct:0},
+      {level:"hard", q:"در کمیک‌های مارول، اولین کسی که میزبان نیروی ققنوس (Phoenix Force) می‌شود چه کسی است؟", options:["جین گری","اما فراست","ریچل سامرز","هوپ سامرز"], correct:0},
+      {level:"hard", q:"زندان ویژه‌ی نگهداری ابرقهرمانان و ابرشرورانی که شیلد اداره می‌کرد چه نام دارد؟", options:["رفت","نگاتیو زون","پلیت","ولت"], correct:0},
+      {level:"hard", q:"اسکلت فلزی وولورین در کمیک‌ها از چه فلزی ساخته شده؟", options:["آدامانتیوم","وایبرانیوم","کارباینیوم","پرومتیوم"], correct:0},
+      {level:"hard", q:"در انتقام‌جویان: پایان بازی، کدام شخصیت با استفاده از سنگ‌های بی‌نهایت، تانوس و ارتشش را نابود می‌کند و جان خود را از دست می‌دهد؟", options:["تونی استارک","استیو راجرز","بروس بنر","ناتاشا رومانوف"], correct:0},
+      {level:"hard", q:"در فیلم Spider-Man: No Way Home، دنیای موازی که شخصیت‌های عنکبوتی از آن می‌آیند چه نامیده می‌شود؟", options:["مالتی‌ورس (چندجهانی)","دارک دایمنشن","کوانتوم رلم","نگاتیو زون"], correct:0},
+    ]
+  }
+};
+
+const DURATION = {easy:15, medium:20, hard:25}; // seconds per difficulty
+const LEVEL_FA = {easy:"آسون", medium:"متوسط", hard:"سخت"};
+
+// ---------------------------------------------------------------
+// STATE + HELPERS
+// ---------------------------------------------------------------
+let state = { screen:'landing' };
+let pollTimer = null, countdownTimer = null;
+let myAnswers = {}; // in-memory copy of {qIndex: choiceIndex} for the current player
+let lastShownQIndex = -1;
+let lastRevealShown = -1;
+
+function safeKey(str){
+  return String(str).trim().replace(/[\s\/\\'"]+/g,"_").slice(0,60) || "بازیکن";
+}
+function randCode(){
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let s = "";
+  for(let i=0;i<5;i++) s += chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+function stopPolling(){
+  if(pollTimer){ clearInterval(pollTimer); pollTimer=null; }
+  if(countdownTimer){ clearInterval(countdownTimer); countdownTimer=null; }
+}
+async function getRoom(code){
+  try{
+    const {data, error} = await sb.from('rooms').select('*').eq('code', code).maybeSingle();
+    if(error || !data) return null;
+    return {
+      topic: data.topic,
+      phase: data.phase,
+      qIndex: data.q_index,
+      qStartTs: Number(data.q_start_ts),
+      playedCount: data.played_count,
+      totalQuestions: data.total_questions
+    };
+  }catch(e){ console.error(e); return null; }
+}
+async function setRoom(code, obj){
+  try{
+    const {error} = await sb.from('rooms').upsert({
+      code,
+      topic: obj.topic,
+      phase: obj.phase,
+      q_index: obj.qIndex,
+      q_start_ts: obj.qStartTs,
+      played_count: obj.playedCount,
+      total_questions: obj.totalQuestions
+    });
+    if(error){ console.error(error); return false; }
+    return true;
+  }catch(e){ console.error(e); return false; }
+}
+async function listPlayers(code){
+  try{
+    const {data, error} = await sb.from('players').select('*').eq('room_code', code);
+    if(error || !data) return [];
+    return data.map(p=>({ name: p.name, answers: p.answers || {}, joinedAt: Number(p.joined_at) }));
+  }catch(e){ console.error(e); return []; }
+}
+async function upsertPlayer(code, safeName, displayName, answers){
+  try{
+    const {error} = await sb.from('players').upsert({
+      room_code: code,
+      safe_name: safeName,
+      name: displayName,
+      answers: answers,
+      joined_at: Date.now()
+    });
+    if(error){ console.error(error); return false; }
+    return true;
+  }catch(e){ console.error(e); return false; }
+}
+
+function render(html){ document.getElementById('root').innerHTML = html; }
+
+// ---------------------------------------------------------------
+// SCREEN: LANDING
+// ---------------------------------------------------------------
+function screenLanding(){
+  stopPolling();
+  const topicOpts = Object.keys(TOPICS).map(id=>`<option value="${id}">${TOPICS[id].name}</option>`).join('');
+  render(`
+    <h2>می‌خوای چیکار کنی؟</h2>
+    <div class="row" style="margin-bottom:8px;">
+      <button class="btn btn-primary" id="btnHost">ساخت اتاق (میزبان)</button>
+      <button class="btn btn-secondary" id="btnJoin">ورود به اتاق</button>
+    </div>
+    <p class="muted">یک نفر «میزبان» می‌شه و بازی رو کنترل می‌کنه، بقیه با کد اتاق وارد می‌شن و هم‌زمان جواب می‌دن.</p>
+  `);
+  document.getElementById('btnHost').onclick = ()=>screenHostSetup();
+  document.getElementById('btnJoin').onclick = ()=>screenJoin();
+}
+
+// ---------------------------------------------------------------
+// HOST FLOW
+// ---------------------------------------------------------------
+function screenHostSetup(){
+  stopPolling();
+  const topicOpts = Object.keys(TOPICS).map(id=>`<option value="${id}">${TOPICS[id].name}</option>`).join('');
+  render(`
+    <h2>ساخت اتاق جدید</h2>
+    <label>موضوع کوییز</label>
+    <select id="topicSel">${topicOpts}</select>
+    <button class="btn btn-primary" id="btnCreate">ساخت اتاق</button>
+    <button class="link-btn" id="btnBack">بازگشت</button>
+  `);
+  document.getElementById('btnBack').onclick = screenLanding;
+  document.getElementById('btnCreate').onclick = async ()=>{
+    const btn = document.getElementById('btnCreate');
+    btn.disabled = true; btn.textContent = "در حال ساخت...";
+    const topicId = document.getElementById('topicSel').value;
+    let code, existing;
+    do{
+      code = randCode();
+      existing = await getRoom(code);
+    } while(existing);
+    const total = TOPICS[topicId].questions.length;
+    const ok = await setRoom(code, {
+      topic: topicId, phase:'lobby', qIndex:-1, qStartTs:0, playedCount:0,
+      totalQuestions: total, createdAt: Date.now()
+    });
+    if(!ok){ btn.disabled=false; btn.textContent="ساخت اتاق"; alert("مشکلی پیش اومد، دوباره امتحان کن."); return; }
+    screenHostLobby(code, topicId);
+  };
+}
+
+function screenHostLobby(code, topicId){
+  stopPolling();
+  render(`
+    <div class="top-bar"><span class="badge badge-medium">میزبان</span><span class="muted" style="margin:0;">${TOPICS[topicId].name}</span></div>
+    <p class="muted" style="margin-top:0;">این کد رو با دوستات به اشتراک بذار</p>
+    <div class="code-display">${code}</div>
+    <div id="playerArea">
+      <p class="muted">در انتظار پیوستن بازیکن‌ها...</p>
+    </div>
+    <button class="btn btn-primary" id="btnStart">شروع کوییز</button>
+    <button class="link-btn" id="btnCancel">لغو و بازگشت</button>
+  `);
+  document.getElementById('btnCancel').onclick = screenLanding;
+  document.getElementById('btnStart').onclick = async ()=>{
+    const players = await listPlayers(code);
+    if(players.length===0 && !confirm("هنوز کسی وارد نشده. بازی رو شروع کنم؟")) return;
+    const room = await getRoom(code);
+    room.phase='playing'; room.qIndex=0; room.qStartTs=Date.now(); room.playedCount=1;
+    await setRoom(code, room);
+    screenHostPlay(code, topicId);
+  };
+  const refresh = async ()=>{
+    const players = await listPlayers(code);
+    const area = document.getElementById('playerArea');
+    if(!area) return;
+    if(players.length===0){
+      area.innerHTML = `<p class="muted">در انتظار پیوستن بازیکن‌ها...</p>`;
+    }else{
+      area.innerHTML = `<p class="muted" style="text-align:right;">${players.length} نفر پیوستن:</p>
+        <ul class="player-list">${players.map(p=>`<li class="player-chip">${escapeHtml(p.name)}</li>`).join('')}</ul>`;
+    }
+  };
+  refresh();
+  pollTimer = setInterval(refresh, 2000);
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+async function screenHostPlay(code, topicId){
+  stopPolling();
+  const room = await getRoom(code);
+  if(!room) return screenLanding();
+  const qs = TOPICS[topicId].questions;
+  const q = qs[room.qIndex];
+  const isLast = room.qIndex === qs.length-1;
+  const badgeClass = q.level==='easy'?'badge-easy':(q.level==='medium'?'badge-medium':'badge-hard');
+
+  const dots = qs.map((_,i)=>{
+    let cls='dot';
+    if(i<room.qIndex) cls+=' done';
+    if(i===room.qIndex) cls+=' current';
+    return `<span class="${cls}"></span>`;
+  }).join('');
+
+  render(`
+    <div class="top-bar">
+      <span class="badge ${badgeClass}">${LEVEL_FA[q.level]}</span>
+      <span class="muted" style="margin:0;">سوال ${room.qIndex+1} از ${qs.length}</span>
+    </div>
+    <div class="progress-dots">${dots}</div>
+    <div class="qtext">${escapeHtml(q.q)}</div>
+    <div class="choice-row" id="hostChoices">
+      ${q.options.map((opt,i)=>`<div class="btn-choice ${i===q.correct?'correct':''}" style="cursor:default;">${escapeHtml(opt)} ${i===q.correct?'✓':''}</div>`).join('')}
+    </div>
+    <p class="muted" id="answerCount">در حال شمارش جواب‌ها...</p>
+    <button class="btn btn-gold" id="btnNext">${isLast ? 'پایان و نمایش نتایج' : 'سوال بعدی'}</button>
+  `);
+
+  document.getElementById('btnNext').onclick = async ()=>{
+    const btn = document.getElementById('btnNext');
+    btn.disabled = true;
+    const r = await getRoom(code);
+    if(isLast){
+      r.phase='ended';
+      await setRoom(code, r);
+      screenHostEnded(code, topicId);
+    }else{
+      r.qIndex += 1;
+      r.qStartTs = Date.now();
+      r.playedCount = r.qIndex+1;
+      await setRoom(code, r);
+      screenHostPlay(code, topicId);
+    }
+  };
+
+  const refreshCount = async ()=>{
+    const players = await listPlayers(code);
+    const answered = players.filter(p=>p.answers && (room.qIndex in p.answers || String(room.qIndex) in p.answers)).length;
+    const el = document.getElementById('answerCount');
+    if(el) el.textContent = `${answered} از ${players.length} نفر جواب دادن`;
+  };
+  refreshCount();
+  pollTimer = setInterval(refreshCount, 1500);
+}
+
+async function screenHostEnded(code, topicId){
+  stopPolling();
+  render(`<div class="center-msg"><span class="big">در حال محاسبه نتایج...</span></div>`);
+  const leaderboard = await computeLeaderboard(code, topicId);
+  renderLeaderboard(leaderboard, true, code);
+}
+
+async function computeLeaderboard(code, topicId){
+  const qs = TOPICS[topicId].questions;
+  const players = await listPlayers(code);
+  const room = await getRoom(code);
+  const total = (room && room.playedCount) ? room.playedCount : qs.length;
+  return players.map(p=>{
+    let correct=0, wrong=0, unanswered=0;
+    for(let i=0;i<total;i++){
+      const given = p.answers ? p.answers[i] : undefined;
+      if(given===undefined || given===null){ unanswered++; }
+      else if(given===qs[i].correct){ correct++; }
+      else{ wrong++; }
+    }
+    return {name:p.name, correct, wrong, unanswered};
+  }).sort((a,b)=> b.correct-a.correct || a.wrong-b.wrong);
+}
+
+function renderLeaderboard(list, isHost, code){
+  const rows = list.map((p,i)=>`
+    <tr>
+      <td class="${i===0?'rank1':''}">${i+1}</td>
+      <td class="name">${escapeHtml(p.name)}</td>
+      <td class="go-color">${p.correct}</td>
+      <td class="blaze-color">${p.wrong}</td>
+      <td class="dim-color">${p.unanswered}</td>
+    </tr>`).join('');
+  render(`
+    <h2>🏆 نتایج نهایی</h2>
+    ${list.length===0 ? '<p class="muted">هیچ بازیکنی ثبت نشده.</p>' : `
+    <table class="results">
+      <thead><tr><th>#</th><th>نام</th><th>درست</th><th>غلط</th><th>بی‌جواب</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`}
+    <button class="btn btn-secondary" id="btnHome" style="margin-top:20px;">بازگشت به صفحه اصلی</button>
+  `);
+  document.getElementById('btnHome').onclick = screenLanding;
+}
+
+// ---------------------------------------------------------------
+// PLAYER FLOW
+// ---------------------------------------------------------------
+function screenJoin(){
+  stopPolling();
+  render(`
+    <h2>ورود به اتاق</h2>
+    <label>اسمت</label>
+    <input type="text" id="nameInput" placeholder="مثلاً: علی" maxlength="20">
+    <label>کد اتاق</label>
+    <input type="text" id="codeInput" placeholder="مثلاً: A3F9K" maxlength="8" style="text-transform:uppercase;">
+    <div id="joinError" class="error-text hidden"></div>
+    <button class="btn btn-primary" id="btnJoinRoom">ورود</button>
+    <button class="link-btn" id="btnBack">بازگشت</button>
+  `);
+  document.getElementById('btnBack').onclick = screenLanding;
+  document.getElementById('btnJoinRoom').onclick = async ()=>{
+    const name = document.getElementById('nameInput').value.trim();
+    const code = document.getElementById('codeInput').value.trim().toUpperCase();
+    const errEl = document.getElementById('joinError');
+    errEl.classList.add('hidden');
+    if(!name || !code){ errEl.textContent="اسم و کد اتاق رو وارد کن."; errEl.classList.remove('hidden'); return; }
+    const btn = document.getElementById('btnJoinRoom');
+    btn.disabled = true; btn.textContent = "در حال بررسی...";
+    const room = await getRoom(code);
+    if(!room){
+      errEl.textContent = "اتاقی با این کد پیدا نشد.";
+      errEl.classList.remove('hidden');
+      btn.disabled=false; btn.textContent="ورود";
+      return;
+    }
+    const safeName = safeKey(name);
+    myAnswers = {};
+    await upsertPlayer(code, safeName, name, {});
+    lastShownQIndex = -1; lastRevealShown = -1;
+    screenPlayerWait(code, safeName, name, room.topic);
+  };
+}
+
+function screenPlayerWait(code, safeName, displayName, topicId){
+  stopPolling();
+  render(`
+    <div class="center-msg">
+      <span class="big">آماده‌ای!</span>
+      <p class="muted">در انتظار شروع بازی توسط میزبان...</p>
+      <p class="muted">اسمت: <strong style="color:var(--chalk);">${escapeHtml(displayName)}</strong></p>
+    </div>
+  `);
+  pollTimer = setInterval(async ()=>{
+    const room = await getRoom(code);
+    if(!room) return;
+    if(room.phase==='playing'){
+      screenPlayerGame(code, safeName, displayName, topicId);
+    }
+  }, 1500);
+}
+
+async function screenPlayerGame(code, safeName, displayName, topicId){
+  stopPolling();
+  const room = await getRoom(code);
+  if(!room) return;
+  if(room.phase==='ended'){ return screenPlayerEnded(code, topicId); }
+
+  const qs = TOPICS[topicId].questions;
+  const q = qs[room.qIndex];
+  const already = myAnswers[room.qIndex] !== undefined;
+  const badgeClass = q.level==='easy'?'badge-easy':(q.level==='medium'?'badge-medium':'badge-hard');
+  const duration = DURATION[q.level] || 20;
+
+  render(`
+    <div class="top-bar">
+      <span class="badge ${badgeClass}">${LEVEL_FA[q.level]}</span>
+      <div class="timer-wrap"><div class="timer-burst" id="timerBox">--</div></div>
+    </div>
+    <p class="muted" style="margin-top:0;">سوال ${room.qIndex+1} از ${qs.length}</p>
+    <div class="qtext">${escapeHtml(q.q)}</div>
+    <div class="choice-row" id="choices">
+      ${q.options.map((opt,i)=>`<button class="btn-choice" data-i="${i}" ${already?'disabled':''}>${escapeHtml(opt)}</button>`).join('')}
+    </div>
+    <p class="muted" id="statusMsg">${already ? 'جوابت ثبت شده، منتظر بمون...' : 'یکی از گزینه‌ها رو انتخاب کن'}</p>
+  `);
+
+  if(already){
+    const el = document.querySelector(`#choices [data-i="${myAnswers[room.qIndex]}"]`);
+    if(el) el.classList.add('selected');
+  }
+
+  document.querySelectorAll('#choices .btn-choice').forEach(btn=>{
+    btn.onclick = async ()=>{
+      if(myAnswers[room.qIndex] !== undefined) return;
+      const i = parseInt(btn.getAttribute('data-i'));
+      const remaining = duration - (Date.now()-room.qStartTs)/1000;
+      if(remaining<=0) return;
+      myAnswers[room.qIndex] = i;
+      document.querySelectorAll('#choices .btn-choice').forEach(b=>{b.disabled=true;});
+      btn.classList.add('selected');
+      document.getElementById('statusMsg').textContent = 'جوابت ثبت شده، منتظر بمون...';
+      await upsertPlayer(code, safeName, displayName, myAnswers);
+    };
+  });
+
+  lastShownQIndex = room.qIndex;
+
+  const tick = ()=>{
+    const remaining = Math.max(0, duration - (Date.now()-room.qStartTs)/1000);
+    const box = document.getElementById('timerBox');
+    if(box){
+      box.textContent = Math.ceil(remaining);
+      box.classList.toggle('low', remaining<=5);
+    }
+    if(remaining<=0){
+      document.querySelectorAll('#choices .btn-choice').forEach(b=>{b.disabled=true;});
+      if(myAnswers[room.qIndex]===undefined){
+        const sm = document.getElementById('statusMsg');
+        if(sm) sm.textContent = 'زمان تموم شد!';
+      }
+    }
+  };
+  tick();
+  countdownTimer = setInterval(tick, 250);
+
+  pollTimer = setInterval(async ()=>{
+    const r = await getRoom(code);
+    if(!r) return;
+    if(r.phase==='ended'){ stopPolling(); return screenPlayerEnded(code, topicId); }
+    if(r.qIndex !== room.qIndex){ stopPolling(); return screenPlayerGame(code, safeName, displayName, topicId); }
+  }, 1200);
+}
+
+async function screenPlayerEnded(code, topicId){
+  stopPolling();
+  render(`<div class="center-msg"><span class="big">در حال محاسبه نتایج...</span></div>`);
+  const leaderboard = await computeLeaderboard(code, topicId);
+  const qs = TOPICS[topicId].questions;
+  const total = qs.length;
+  let correct=0, wrong=0, unanswered=0;
+  for(let i=0;i<total;i++){
+    const given = myAnswers[i];
+    if(given===undefined){ unanswered++; }
+    else if(given===qs[i].correct){ correct++; }
+    else{ wrong++; }
+  }
+  render(`
+    <h2>نتیجه‌ی تو</h2>
+    <div class="stat-row">
+      <div class="stat-box"><div class="num go-color">${correct}</div><div class="lbl">درست</div></div>
+      <div class="stat-box"><div class="num blaze-color">${wrong}</div><div class="lbl">غلط</div></div>
+      <div class="stat-box"><div class="num dim-color">${unanswered}</div><div class="lbl">بی‌جواب</div></div>
+    </div>
+    <h2>🏆 جدول کل بازیکن‌ها</h2>
+  `);
+  const container = document.getElementById('root');
+  const rows = leaderboard.map((p,i)=>`
+    <tr>
+      <td class="${i===0?'rank1':''}">${i+1}</td>
+      <td class="name">${escapeHtml(p.name)}</td>
+      <td class="go-color">${p.correct}</td>
+      <td class="blaze-color">${p.wrong}</td>
+      <td class="dim-color">${p.unanswered}</td>
+    </tr>`).join('');
+  container.insertAdjacentHTML('beforeend', `
+    <table class="results">
+      <thead><tr><th>#</th><th>نام</th><th>درست</th><th>غلط</th><th>بی‌جواب</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <button class="btn btn-secondary" id="btnHome" style="margin-top:20px;">بازگشت به صفحه اصلی</button>
+  `);
+  document.getElementById('btnHome').onclick = screenLanding;
+}
+
+// ---------------------------------------------------------------
+// INIT
+// ---------------------------------------------------------------
+const vTag = document.getElementById('versionTag');
+if(vTag) vTag.textContent = 'v' + APP_VERSION;
+screenLanding();
+
+})();
+</script>
+</body>
+</html>
